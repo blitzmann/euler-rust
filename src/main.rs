@@ -5,8 +5,9 @@ mod p002;
 mod p003;
 mod p004;
 mod p005;
+mod p006;
 
 fn main() {
     // p001::solve();
-    println!("{:?}", p005::solve(20));
+    println!("{:?}", p006::solve(100));
 }
