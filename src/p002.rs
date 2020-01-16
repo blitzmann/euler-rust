@@ -1,5 +1,5 @@
-// from https://doc.rust-lang.org/rust-by-example/trait/iter.html
-// tweaked to support a limit
+// From https://doc.rust-lang.org/rust-by-example/trait/iter.html
+// Tweaked to support a limit
 pub struct Fibonacci {
     curr: u64,
     next: u64,
@@ -32,4 +32,18 @@ pub fn fibonacci(stop: u64) -> Fibonacci {
 pub fn solve(limit: u64) -> u64 {
     // todo: write test. limit of 100 = 44
     fibonacci(limit).filter(|i| i % 2 == 0).sum::<u64>()
+}
+
+#[cfg(test)]
+mod tests {
+
+    #[test]
+    fn euler_test() {
+        assert_eq!(super::solve(89), 44);
+    }
+
+    #[test]
+    fn answer_test() {
+        assert_eq!(super::solve(4_000_000), 4613732);
+    }
 }

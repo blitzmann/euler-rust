@@ -1,4 +1,4 @@
-#![feature(test)] 
+#![feature(test)]
 
 mod p001;
 mod p002;
@@ -8,7 +8,8 @@ mod p005;
 mod p006;
 mod p007;
 mod p008;
+mod p009;
 
 fn main() {
-    println!("{:?}", p008::solve(13));
+    println!("{:?}", p009::solve());
 }
