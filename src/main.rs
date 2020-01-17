@@ -10,7 +10,8 @@ mod p007;
 mod p008;
 mod p009;
 mod p010;
+mod p011;
 
 fn main() {
-    println!("{:?}", p010::solve(2_000_000));
+    println!("{:?}", p011::solve());
 }
