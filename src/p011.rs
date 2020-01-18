@@ -1,15 +1,9 @@
 /*
     For this, we will simply be walking the list. As we walk the list, we will check
-    the four adjacent numbers going up, left, up-left, and up-right. There is no
-    need to check right and down, as they will eventually be included in the checks
-    once we get there. The following facts are present:
-    - To calculate the four above, it will be the product of the indicies i,
-        i-(width), i-(width*2), i-(width*3)
-    - For diagonal, it will be the product of indicies i, i-(width+-1),
-        i-(width*2+-2),i-(width*3+-3). Signs determine direction
-    - For left, it will simply be i and the last 3.
-    For out of bounds (negative indices or indice that wrap around the width),
-    the test should return False
+    the four adjacent numbers going down, right, down-left, and down-right. We use
+    these directions to simplify the logic:
+    * We don't have to check for negative indexes, only out of bounds
+    * We don't need to check the other four directions as they will be checked with another index test
 */
 
 const WIDTH: u32 = 20;
@@ -36,47 +30,277 @@ const GRID: &str = "\
     20 73 35 29 78 31 90 01 74 31 49 71 48 86 81 16 23 57 05 54
     01 70 54 71 83 51 54 69 16 92 33 48 61 43 52 01 89 19 67 48";
 
-fn idxVert(i: usize, list: &Vec<u32>) -> u32 {
-    let values: Option<Vec<_>> = (1..ARM_LENGTH)
-        .map(|x| {
-            let t = i as i32 - (WIDTH * x) as i32;
-            if t < 0 {
-                None
-            } else {
-                list.get(t as usize)
-            }
-        })
+fn idx_vert(i: usize, list: &Vec<u32>) -> u32 {
+    if (i as u32 > list.len() as u32 - (WIDTH * (ARM_LENGTH - 1))) {
+        return 0;
+    }
+    let values: Option<Vec<_>> = (0..ARM_LENGTH)
+        .map(|x| i as u32 + (WIDTH * x))
+        .map(|t| list.get(t as usize))
         .collect(); // collect into a single Option which may have a vec
 
     match values {
         None => 0, // happens when out of bounds, so it's effectively 0
-        Some(vec) => vec.into_iter().product(), 
+        Some(vec) => vec.into_iter().product(),
     }
 }
 
-pub fn solve() -> u64 {
-    let list:Vec<u32> = GRID
+fn idx_hor(i: usize, list: &Vec<u32>) -> u32 {
+    // if our initial one is too close to the right edge, return early
+    if (WIDTH - (i as u32 % WIDTH) < ARM_LENGTH) {
+        return 0;
+    }
+    let values: Option<Vec<_>> = (0..ARM_LENGTH)
+        .map(|x| i as u32 + x)
+        .map(|t| list.get(t as usize))
+        .collect(); // collect into a single Option which may have a vec
+
+    match values {
+        None => 0, // happens when out of bounds, so it's effectively 0
+        Some(vec) => vec.into_iter().product(),
+    }
+}
+
+fn idx_diag_left(i: usize, list: &Vec<u32>) -> u32 {
+    if (
+        i as u32 > list.len() as u32 - (WIDTH * (ARM_LENGTH-1)) // too far down, same as the vert check
+        || i as u32 % WIDTH < ARM_LENGTH-1
+        // too far to the left
+    ) {
+        return 0;
+    }
+    let values: Option<Vec<_>> = (0..ARM_LENGTH)
+        .map(|x| i as u32 + (WIDTH * x) - x)
+        .map(|t| list.get(t as usize))
+        .collect();
+
+    match values {
+        None => 0, // happens when out of bounds, so it's effectively 0
+        Some(vec) => vec.into_iter().product(),
+    }
+}
+
+fn idx_diag_right(i: usize, list: &Vec<u32>) -> u32 {
+    if (
+        i as u32 > list.len() as u32 - (WIDTH * (ARM_LENGTH-1)) // too far down, same as the vert check
+        || WIDTH  - (i as u32 % WIDTH) < ARM_LENGTH
+        // too far to the right
+    ) {
+        return 0;
+    }
+    let values: Option<Vec<_>> = (0..ARM_LENGTH)
+        .map(|x| i as u32 + (WIDTH * x) + x)
+        // .inspect(|x| println!("t: {:?}", x))
+        .map(|t| list.get(t as usize))
+        // .inspect(|x| println!("r: {:?}", x))
+        .collect(); // collect into a single Option which may have a vec
+
+    match values {
+        None => 0, // happens when out of bounds, so it's effectively 0
+        Some(vec) => vec.into_iter().product(),
+    }
+}
+
+pub fn solve() -> u32 {
+    let funcs: Vec<fn(usize, &Vec<u32>) -> u32> =
+        vec![idx_diag_left, idx_diag_right, idx_hor, idx_vert];
+
+    let list: Vec<u32> = GRID
         .split_whitespace()
         .map(|c| c.parse::<u32>().unwrap())
         .collect();
 
-    for (i, x) in list.iter().enumerate() {
-        let results = idxVert(i, &list);
-        // println!("{:?} / {:?} / {:?}", i,x, idxVert(i, &list));
-    }
+    // this doesn't work like it should :(
+    //     let r = &list
+    //         .into_iter()
+    //         .enumerate()
+    //         .map(|(i, n)| &funcs
+    //                         .into_iter()
+    //                         .map(|func| func(i, &list))
+    //                         .fold(0, |a, b| a.max(b))
+    //         )
+    //         .fold(0, |a, b| a.max(b));
 
-    2
+    let mut maxmax = 0;
+    for (i, x) in list.iter().enumerate() {
+        let max = &funcs
+            .iter()
+            .map(|func| func(i, &list))
+            .fold(0, |a, b| a.max(b));
+
+        if max > &maxmax {
+            maxmax = *max;
+        }
+    }
+    maxmax
 }
 
-// #[cfg(test)]
-// mod tests {
-//     #[test]
-//     fn euler_test() {
-//         assert_eq!(super::solve(10), 17);
-//     }
+#[cfg(test)]
+mod tests {
 
-//     #[test]
-//     fn answer_test() {
-//         assert_eq!(super::solve(2_000_000), 142_913_828_922);
-//     }
-// }
+    #[test]
+    fn idx_vert() {
+        let list: Vec<u32> = super::GRID
+            .split_whitespace()
+            .map(|c| c.parse::<u32>().unwrap())
+            .collect();
+        assert_eq!(super::idx_vert(2, &list), 22 * 99 * 31 * 95);
+    }
+
+    #[test]
+    fn idx_vert_out_of_bounds() {
+        let list: Vec<u32> = super::GRID
+            .split_whitespace()
+            .map(|c| c.parse::<u32>().unwrap())
+            .collect();
+        assert_eq!(super::idx_vert(360, &list), 0);
+    }
+
+    #[test]
+    fn idx_vert_last_bounds() {
+        let list: Vec<u32> = super::GRID
+            .split_whitespace()
+            .map(|c| c.parse::<u32>().unwrap())
+            .collect();
+        assert_eq!(super::idx_vert(339, &list), 36 * 16 * 54 * 48);
+    }
+
+    #[test]
+    fn idx_hor() {
+        let list: Vec<u32> = super::GRID
+            .split_whitespace()
+            .map(|c| c.parse::<u32>().unwrap())
+            .collect();
+        assert_eq!(super::idx_hor(1, &list), 2 * 22 * 97 * 38);
+    }
+
+    #[test]
+    fn idx_hor_out_of_bounds() {
+        let list: Vec<u32> = super::GRID
+            .split_whitespace()
+            .map(|c| c.parse::<u32>().unwrap())
+            .collect();
+        assert_eq!(super::idx_hor(399, &list), 0); // Out of bounds
+    }
+
+    #[test]
+    fn idx_hor_left_bound() {
+        let list: Vec<u32> = super::GRID
+            .split_whitespace()
+            .map(|c| c.parse::<u32>().unwrap())
+            .collect();
+        assert_eq!(super::idx_hor(20, &list), 49 * 49 * 99 * 40);
+    }
+
+    #[test]
+    fn idx_hor_right_bound() {
+        let list: Vec<u32> = super::GRID
+            .split_whitespace()
+            .map(|c| c.parse::<u32>().unwrap())
+            .collect();
+        assert_eq!(super::idx_hor(16, &list), 50 * 77 * 91 * 08);
+    }
+    #[test]
+    fn idx_hor_wrapped() {
+        let list: Vec<u32> = super::GRID
+            .split_whitespace()
+            .map(|c| c.parse::<u32>().unwrap())
+            .collect();
+        assert_eq!(super::idx_hor(17, &list), 0); // wrapped to next line
+    }
+
+    #[test]
+    fn idx_diag_left() {
+        let list: Vec<u32> = super::GRID
+            .split_whitespace()
+            .map(|c| c.parse::<u32>().unwrap())
+            .collect();
+        assert_eq!(super::idx_diag_left(3, &list), 97 * 99 * 49 * 52);
+    }
+
+    #[test]
+    fn idx_diag_left_wrapped() {
+        let list: Vec<u32> = super::GRID
+            .split_whitespace()
+            .map(|c| c.parse::<u32>().unwrap())
+            .collect();
+        assert_eq!(super::idx_diag_left(22, &list), 0);
+    }
+
+    #[test]
+    fn idx_diag_left_out_of_bounds() {
+        let list: Vec<u32> = super::GRID
+            .split_whitespace()
+            .map(|c| c.parse::<u32>().unwrap())
+            .collect();
+        assert_eq!(super::idx_diag_left(361, &list), 0);
+    }
+
+    #[test]
+    fn idx_diag_left_left_bounds() {
+        let list: Vec<u32> = super::GRID
+            .split_whitespace()
+            .map(|c| c.parse::<u32>().unwrap())
+            .collect();
+        assert_eq!(super::idx_diag_left(323, &list), 73 * 36 * 73 * 1);
+    }
+
+    #[test]
+    fn idx_diag_left_right_bounds() {
+        let list: Vec<u32> = super::GRID
+            .split_whitespace()
+            .map(|c| c.parse::<u32>().unwrap())
+            .collect();
+        assert_eq!(super::idx_diag_left(339, &list), 36 * 36 * 57 * 89);
+    }
+
+    #[test]
+    fn idx_diag_right() {
+        let list: Vec<u32> = super::GRID
+            .split_whitespace()
+            .map(|c| c.parse::<u32>().unwrap())
+            .collect();
+        assert_eq!(super::idx_diag_right(0, &list), 8 * 49 * 31 * 23); // out of bounds
+    }
+
+    #[test]
+    fn idx_diag_right_left_bound() {
+        let list: Vec<u32> = super::GRID
+            .split_whitespace()
+            .map(|c| c.parse::<u32>().unwrap())
+            .collect();
+        assert_eq!(super::idx_diag_right(80, &list), 22 * 47 * 81 * 68); // out of bounds
+    }
+
+    #[test]
+    fn idx_diag_right_right_bound() {
+        let list: Vec<u32> = super::GRID
+            .split_whitespace()
+            .map(|c| c.parse::<u32>().unwrap())
+            .collect();
+        assert_eq!(super::idx_diag_right(16, &list), 50 * 56 * 36 * 91); // out of bounds
+    }
+
+    #[test]
+    fn idx_diag_right_out_of_bounds() {
+        let list: Vec<u32> = super::GRID
+            .split_whitespace()
+            .map(|c| c.parse::<u32>().unwrap())
+            .collect();
+        assert_eq!(super::idx_diag_right(340, &list), 0); // out of bounds
+    }
+
+    #[test]
+    fn idx_diag_right_wrapped() {
+        let list: Vec<u32> = super::GRID
+            .split_whitespace()
+            .map(|c| c.parse::<u32>().unwrap())
+            .collect();
+        assert_eq!(super::idx_diag_right(17, &list), 0); // out of bounds
+    }
+
+    #[test]
+    fn answer_test() {
+        assert_eq!(super::solve(), 70600674);
+    }
+}
