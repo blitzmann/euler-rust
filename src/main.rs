@@ -16,7 +16,8 @@ mod p013;
 mod p014;
 mod p015;
 mod p016;
+mod p017;
 
 fn main() {
-    println!("{:?}", p016::solve(1000));
+    println!("{:?}", p017::solve(1000));
 }
