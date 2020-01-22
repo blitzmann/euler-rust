@@ -6,7 +6,7 @@ pub fn solve(n: u32) -> u32 {
     loop {
         let triangle = (i * (i + 1)) / 2;
         let factors = factors(triangle).len();
-        if (factors as u32 > n) {
+        if factors as u32 > n {
             return triangle;
         }
         i += 1;
