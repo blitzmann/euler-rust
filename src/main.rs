@@ -22,7 +22,8 @@ mod p019;
 mod p020;
 mod p021;
 mod p022;
+mod p023;
 
 fn main() {
-    println!("{:?}", p022::solve());
+    println!("{:?}", p023::solve());
 }
